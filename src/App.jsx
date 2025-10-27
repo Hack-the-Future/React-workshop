@@ -4,9 +4,9 @@ import {
   fetchCityWeather, 
   geocodeLocation, 
   loadMultipleCitiesWeather, 
-  celsiusToFahrenheit, 
-  msToMph 
+  celsiusToFahrenheit
 } from './services/weatherService'
+import WeatherDetailModal from './components/WeatherDetailModal'
 
 function App() {
   const [selectedCity, setSelectedCity] = useState(null)
@@ -22,6 +22,34 @@ function App() {
   const mapRef = useRef(null)
   const mapInstance = useRef(null)
   const markersRef = useRef([])
+
+  // Function to add a marker to the map
+  const addMarkerToMap = (city) => {
+    if (mapInstance.current && window.google) {
+      const marker = new window.google.maps.Marker({
+        position: { lat: city.lat, lng: city.lng },
+        map: mapInstance.current,
+        title: `${city.name}, ${city.state}`,
+        icon: {
+          url: 'data:image/svg+xml;base64,' + btoa(`
+            <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="10" cy="10" r="8" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
+              <circle cx="10" cy="10" r="3" fill="#ffffff"/>
+            </svg>
+          `),
+          scaledSize: new window.google.maps.Size(20, 20)
+        }
+      })
+      
+      marker.addListener('click', () => {
+        setSelectedCity(city)
+      })
+      
+      markersRef.current.push(marker)
+      return marker
+    }
+    return null
+  }
 
   // Search for a city and add it to the list
   const addCity = async (e) => {
@@ -59,28 +87,7 @@ function App() {
         }))
 
         // Add marker to map
-        if (mapInstance.current && window.google) {
-          const marker = new window.google.maps.Marker({
-            position: { lat: newCity.lat, lng: newCity.lng },
-            map: mapInstance.current,
-            title: `${newCity.name}, ${newCity.state}`,
-            icon: {
-              url: 'data:image/svg+xml;base64,' + btoa(`
-                <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                  <circle cx="10" cy="10" r="8" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
-                  <circle cx="10" cy="10" r="3" fill="#ffffff"/>
-                </svg>
-              `),
-              scaledSize: new window.google.maps.Size(20, 20)
-            }
-          })
-          
-          marker.addListener('click', () => {
-            setSelectedCity(newCity)
-          })
-          
-          markersRef.current.push(marker)
-        }
+        addMarkerToMap(newCity)
 
         setSearchQuery('') // Clear search input
       } else {
@@ -172,26 +179,7 @@ function App() {
             ]
             
             initialCities.forEach((city) => {
-              const marker = new window.google.maps.Marker({
-                position: { lat: city.lat, lng: city.lng },
-                map: map,
-                title: `${city.name}, ${city.state}`,
-                icon: {
-                  url: 'data:image/svg+xml;base64,' + btoa(`
-                    <svg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                      <circle cx="10" cy="10" r="8" fill="#22c55e" stroke="#ffffff" stroke-width="2"/>
-                      <circle cx="10" cy="10" r="3" fill="#ffffff"/>
-                    </svg>
-                  `),
-                  scaledSize: new window.google.maps.Size(20, 20)
-                }
-              })
-              
-              marker.addListener('click', () => {
-                setSelectedCity(city)
-              })
-              
-              markersRef.current.push(marker)
+              addMarkerToMap(city)
             })
           }
         }
@@ -296,15 +284,15 @@ function App() {
                       e.stopPropagation()
                       removeCity(city)
                     }}
-                    className="absolute top-2 right-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors duration-200 flex items-center justify-center"
+                    className="absolute top-2 left-2 w-6 h-6 bg-red-500 hover:bg-red-600 text-white rounded-full text-xs font-bold transition-colors duration-200 flex items-center justify-center"
                     title="Remove city"
                   >
                     ×
                   </button>
                   
-                  <div className="flex justify-between items-center">
+                  <div className="flex justify-between items-center pl-10">
                     <div>
-                      <h3 className="text-lg font-semibold text-gray-800 pr-8">
+                      <h3 className="text-lg font-semibold text-gray-800">
                         {city.name}, {city.state}
                       </h3>
                       {weather ? (
@@ -366,57 +354,15 @@ function App() {
             </div>
           </div>
 
-          {/* Selected City Details */}
-          {selectedCity && cityWeatherData[selectedCity.name] && (
-            <div className="mt-6 bg-blue-50 rounded-xl p-4 border border-blue-200">
-              <h3 className="text-lg font-semibold text-gray-800 mb-3">
-                {selectedCity.name}, {selectedCity.state}
-              </h3>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div className="text-center">
-                  {cityWeatherData[selectedCity.name].current.icon && (
-                    <img 
-                      src={cityWeatherData[selectedCity.name].current.icon}
-                      alt={cityWeatherData[selectedCity.name].current.description}
-                      className="w-16 h-16 mx-auto mb-2"
-                    />
-                  )}
-                  <div className="text-3xl font-bold text-blue-600 mb-1">
-                    {formatTemp(cityWeatherData[selectedCity.name].current.temperature)}°F
-                  </div>
-                  <div className="text-sm text-gray-600 capitalize">
-                    {cityWeatherData[selectedCity.name].current.description}
-                  </div>
-                </div>
-                
-                <div className="space-y-2 text-sm">
-                  {cityWeatherData[selectedCity.name].current.humidity && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Humidity:</span>
-                      <span className="font-semibold">{cityWeatherData[selectedCity.name].current.humidity}%</span>
-                    </div>
-                  )}
-                  {cityWeatherData[selectedCity.name].current.windSpeed && (
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Wind:</span>
-                      <span className="font-semibold">{msToMph(cityWeatherData[selectedCity.name].current.windSpeed)} mph</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {cityWeatherData[selectedCity.name].current.detailedForecast && (
-                <div className="mt-3 pt-3 border-t border-blue-200">
-                  <div className="text-xs text-gray-600 leading-relaxed">
-                    {cityWeatherData[selectedCity.name].current.detailedForecast}
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
         </div>
       </div>
+
+      {/* Weather Detail Modal */}
+      <WeatherDetailModal
+        city={selectedCity}
+        weatherData={selectedCity ? cityWeatherData[selectedCity.name] : null}
+        onClose={() => setSelectedCity(null)}
+      />
     </div>
   )
 }
