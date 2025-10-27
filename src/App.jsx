@@ -59,71 +59,36 @@ function App() {
       return
     }
 
-    setAddingCity(true)
     setError('')
 
-    try {
-      // Get coordinates from the location name using geocoding service
-      const newCity = await geocodeLocation(searchQuery)
+    // TODO: implement adding city to list
 
-      // Check if city already exists
-      const cityKey = `${newCity.name}-${newCity.state}`
-      const cityExists = cityList.some(city => `${city.name}-${city.state}` === cityKey)
+      // Get coordinates from the location name using geocoding service
       
-      if (cityExists) {
-        throw new Error('City already exists in the list')
-      }
 
       // Fetch weather for the new city
-      const weather = await fetchCityWeather(newCity)
-      if (weather) {
+
         // Add to dynamic cities list
-        setCityList(prev => [...prev, newCity])
         
         // Add weather data
-        setCityWeatherData(prev => ({
-          ...prev,
-          [newCity.name]: weather
-        }))
 
         // Add marker to map
-        addMarkerToMap(newCity)
 
-        setSearchQuery('') // Clear search input
-      } else {
-        throw new Error('Unable to fetch weather data for this location')
-      }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setAddingCity(false)
-    }
+      // Clear search input
   }
 
   // Remove a city from the dynamic list
   const removeCity = (cityToRemove) => {
-    setCityList(prev => prev.filter(city => city.id !== cityToRemove.id))
+    // Remove from city list
     
     // Remove weather data
-    setCityWeatherData(prev => {
-      const newData = { ...prev }
-      delete newData[cityToRemove.name]
-      return newData
-    })
+
 
     // Remove marker from map
-    markersRef.current = markersRef.current.filter(marker => {
-      if (marker.getTitle() === `${cityToRemove.name}, ${cityToRemove.state}`) {
-        marker.setMap(null)
-        return false
-      }
-      return true
-    })
+
 
     // Clear selection if this city was selected
-    if (selectedCity && selectedCity.id === cityToRemove.id) {
-      setSelectedCity(null)
-    }
+  
   }
 
   // All cities are now in dynamicCities (including defaults)
